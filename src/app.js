@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const healthRoutes = require("./routes/healthRoutes");
+const identifyRoutes = require("./routes/identifyRoutes");
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/", healthRoutes);
+app.use("/identify", identifyRoutes);
 
 // 404 handler
 app.use((req, res) => {
