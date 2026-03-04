@@ -25,4 +25,36 @@ const createPrimaryContact = async (email, phoneNumber) => {
     return result.rows[0];
 };
 
-module.exports = { findMatchingContacts, createPrimaryContact };
+/**
+ * Create a new secondary contact linked to a primary contact.
+ */
+const createSecondaryContact = async (email, phoneNumber, primaryId) => {
+    const result = await pool.query(
+        `INSERT INTO contacts (email, "phonenumber", "linkedid", "linkprecedence")
+     VALUES ($1, $2, $3, 'secondary')
+     RETURNING *`,
+        [email || null, phoneNumber || null, primaryId]
+    );
+    return result.rows[0];
+};
+
+/**
+ * Fetch all contacts belonging to a primary contact group
+ * (primary itself + all its secondaries).
+ */
+const fetchContactGroup = async (primaryId) => {
+    const result = await pool.query(
+        `SELECT * FROM contacts
+     WHERE id = $1 OR "linkedid" = $1
+     ORDER BY "createdat" ASC`,
+        [primaryId]
+    );
+    return result.rows;
+};
+
+module.exports = {
+    findMatchingContacts,
+    createPrimaryContact,
+    createSecondaryContact,
+    fetchContactGroup,
+};
