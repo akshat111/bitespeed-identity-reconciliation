@@ -3,6 +3,7 @@ const {
     createPrimaryContact,
     createSecondaryContact,
     fetchContactGroup,
+    demotePrimaryToSecondary,
 } = require("../services/contactService");
 
 /**
@@ -65,37 +66,40 @@ const identifyContact = async (req, res) => {
 
         // --- Scenario 2: Existing contacts found ---
 
-        // Step 2: Determine the primary contact
-        // Prefer contacts with linkPrecedence = 'primary'; among those pick the oldest
+        // Step 2: Collect all primary contacts from the matched set
         const primaries = existingContacts.filter(
             (c) => c.linkprecedence === "primary"
         );
 
-        let primaryContact =
-            primaries.length > 0
-                ? primaries.reduce((oldest, c) =>
-                    new Date(c.createdat) < new Date(oldest.createdat) ? c : oldest
-                )
-                : existingContacts.reduce((oldest, c) =>
-                    new Date(c.createdat) < new Date(oldest.createdat) ? c : oldest
-                );
+        // Step 3: Determine the true primary — oldest by createdAt
+        // If none are marked primary, oldest overall contact wins
+        const candidates = primaries.length > 0 ? primaries : existingContacts;
+        const truePrimary = candidates.reduce((oldest, c) =>
+            new Date(c.createdat) < new Date(oldest.createdat) ? c : oldest
+        );
 
-        // Step 3: Check if incoming data introduces new information
+        // Step 4: Merge — demote any other primaries to secondary
+        const otherPrimaries = primaries.filter((c) => c.id !== truePrimary.id);
+        for (const other of otherPrimaries) {
+            await demotePrimaryToSecondary(other.id, truePrimary.id);
+        }
+
+        // Step 5: Check if incoming data introduces new information
         const allEmails = existingContacts.map((c) => c.email).filter(Boolean);
         const allPhones = existingContacts.map((c) => c.phonenumber).filter(Boolean);
 
         const isNewEmail = email && !allEmails.includes(email);
         const isNewPhone = phoneNumber && !allPhones.includes(phoneNumber);
 
-        // Step 4: If new info found → create a secondary contact
+        // Create a secondary if new info exists
         if (isNewEmail || isNewPhone) {
-            await createSecondaryContact(email, phoneNumber, primaryContact.id);
+            await createSecondaryContact(email, phoneNumber, truePrimary.id);
         }
 
-        // Step 5: Fetch the full contact group (primary + all its secondaries)
-        const contactGroup = await fetchContactGroup(primaryContact.id);
+        // Step 6: Fetch full contact group (primary + all secondaries)
+        const contactGroup = await fetchContactGroup(truePrimary.id);
 
-        // Step 6: Build and return the response
+        // Step 7: Build and return the consolidated response
         return res.status(200).json({
             contact: buildContactResponse(contactGroup),
         });

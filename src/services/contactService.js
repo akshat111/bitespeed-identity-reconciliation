@@ -52,9 +52,35 @@ const fetchContactGroup = async (primaryId) => {
     return result.rows;
 };
 
+/**
+ * Demote a primary contact to secondary, linking it under the true primary.
+ * Also re-parents all its existing secondaries to the true primary.
+ */
+const demotePrimaryToSecondary = async (demotedId, truePrimaryId) => {
+    // Demote the contact itself
+    await pool.query(
+        `UPDATE contacts
+     SET "linkprecedence" = 'secondary',
+         "linkedid"       = $1,
+         "updatedat"      = NOW()
+     WHERE id = $2`,
+        [truePrimaryId, demotedId]
+    );
+
+    // Re-parent any secondaries that were linked to the demoted primary
+    await pool.query(
+        `UPDATE contacts
+     SET "linkedid"  = $1,
+         "updatedat" = NOW()
+     WHERE "linkedid" = $2`,
+        [truePrimaryId, demotedId]
+    );
+};
+
 module.exports = {
     findMatchingContacts,
     createPrimaryContact,
     createSecondaryContact,
     fetchContactGroup,
+    demotePrimaryToSecondary,
 };
