@@ -226,16 +226,21 @@ The `contacts` table is created automatically on startup.
 
 ## 🌐 Deployment
 
-The API is deployed and publicly accessible:
+The API is deployed and publicly accessible on **Render**:
 
-| Endpoint       | Method | URL                          |
-|----------------|--------|------------------------------|
-| Health Check   | GET    | `<DEPLOYED_URL>/health`      |
-| Identify       | POST   | `<DEPLOYED_URL>/identify`    |
+| Endpoint     | Method | URL                                                                          |
+|--------------|--------|------------------------------------------------------------------------------|
+| Health Check | GET    | `https://bitespeed-identity-reconciliation-2zzy.onrender.com/health`         |
+| Identify     | POST   | `https://bitespeed-identity-reconciliation-2zzy.onrender.com/identify`       |
 
-> Replace `<DEPLOYED_URL>` with the live deployment URL.
+## Live API Endpoint
+
+```
+POST https://bitespeed-identity-reconciliation-2zzy.onrender.com/identify
+```
 
 ---
+
 
 ## 🛠️ Tech Stack
 
